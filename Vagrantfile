@@ -4,7 +4,6 @@
 Vagrant.configure("2") do |vps|
   vps.vm.box = "debian/bookworm64"
   vps.vm.hostname = "ansible-wireguard-role-vagrant"
-  vps.vm.network "forwarded_port", guest: 9090, host: 9090
   vps.vm.network "public_network",
     :use_dhcp_assigned_default_route => true,
     :adapter => 2,

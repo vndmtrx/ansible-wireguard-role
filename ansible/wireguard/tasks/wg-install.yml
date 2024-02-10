@@ -1,0 +1,33 @@
+---
+- name: "Updates the system package list"
+  ansible.builtin.apt:
+    update_cache: yes
+
+- name: "Wireguard installation and dependencies"
+  ansible.builtin.apt:
+    name: "{{ item }}"
+    state: latest
+    update_cache: yes
+  with_items:
+    - wireguard
+    - wireguard-tools
+  when: wg_backports == false
+
+- name: "Wireguard installation and dependencies from Backports"
+  ansible.builtin.apt:
+    default_release: "{{ ansible_distribution_release }}-backports"
+    name: "{{ item }}"
+    state: latest
+    update_cache: yes
+  with_items:
+    - wireguard
+    - wireguard-tools
+  when: wg_backports == true
+
+- name: "Wireguard Debug Configuration"
+  ansible.builtin.command:
+    cmd: "{{ item }}"
+  with_items:
+    - "modprobe wireguard"
+    - "echo module wireguard +p > /sys/kernel/debug/dynamic_debug/control"
+  when: wg_debug == true

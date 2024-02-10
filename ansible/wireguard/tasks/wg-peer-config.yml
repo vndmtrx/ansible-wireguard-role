@@ -1,0 +1,129 @@
+---
+- name: "Set IP configuration in variable ({{ peer.id }})"
+  ansible.builtin.set_fact:
+    _peer_addrs: "{{ wg_server_net_ipv4 | default(wg_default_server_net_ipv4) | ipaddr('net') | ipaddr(index+2) }},{{ wg_server_net_ipv6 | default(wg_default_server_net_ipv6) | ipaddr('net') | ipaddr(index+2) }}"
+    _peer_ips: "{{ wg_server_net_ipv4 | default(wg_default_server_net_ipv4) | ipaddr('net') | ipaddr(index+2) | ipaddr('address') }},{{ wg_server_net_ipv6 | default(wg_default_server_net_ipv6) | ipaddr('net') | ipaddr(index+2) | ipaddr('address') }}"
+
+- name: "Debug ({{ peer.id }})"
+  ansible.builtin.debug:
+    msg:
+      - "Index: {{ index }}; ID: {{ peer.id }}"
+      - "IPv4: {{ wg_server_net_ipv4 | default(wg_default_server_net_ipv4) | ipaddr('net') | ipaddr(index+2) }}"
+      - "IPv6: {{ wg_server_net_ipv6 | default(wg_default_server_net_ipv6) | ipaddr('net') | ipaddr(index+2) }}"
+      - "IPs: {{ _peer_ips }}"
+      - "Gateway: {{ wg_default_server_endpoint }}"
+  when: wg_debug == true
+
+- block:
+    - name: "Check peer.privkey variável ({{ peer.id }})"
+      ansible.builtin.assert:
+        that:
+          - peer.privkey is defined
+          - peer.privkey
+        fail_msg: "Private key peer.privkey not set to '{{ peer.id }}'. Generating key."
+        quiet: true
+
+    - name: "Set _peer_privkey variable ({{ peer.id }})"
+      ansible.builtin.set_fact:
+        _peer_privkey: "{{ peer.privkey }}"
+      when: peer.privkey is defined
+  rescue:
+    - name: "Generate new peer private key ({{ peer.id }})"
+      ansible.builtin.command:
+        cmd: wg genkey
+      register: _genkey
+    
+    - name: "Set _peer_privkey variable ({{ peer.id }})"
+      ansible.builtin.set_fact:
+        _peer_privkey: "{{ _genkey.stdout }}"
+
+- name: "Generate the public key for the peer private key ({{ peer.id }})"
+  ansible.builtin.command: wg pubkey
+  args:
+    stdin: "{{ _peer_privkey }}"
+  register: _pubkey
+
+- name: "Set _peer_pubkey variable ({{ peer.id }})"
+  ansible.builtin.set_fact:
+    _peer_pubkey: "{{ _pubkey.stdout }}"
+
+- block:
+    - name: "Check peer.pskey variable ({{ peer.id }})"
+      ansible.builtin.assert:
+        that:
+          - peer.pskey is defined
+          - peer.pskey
+        fail_msg: "Pre-shared key peer.pskey not set to '{{ peer.id }}'. Generating key."
+        quiet: true
+
+    - name: "Set _peer_pskey variable ({{ peer.id }})"
+      ansible.builtin.set_fact:
+        _peer_pskey: "{{ peer.pskey }}"
+      when: peer.pskey is defined
+  rescue:
+    - name: "Generate new pre-shared key for peer ({{ peer.id }})"
+      ansible.builtin.command:
+        cmd: wg genpsk
+      register: _genpsk
+    
+    - name: "Set _peer_pskey variable ({{ peer.id }})"
+      ansible.builtin.set_fact:
+        _peer_pskey: "{{ _genpsk.stdout }}"
+
+- name: "Debug ({{ peer.id }})"
+  ansible.builtin.debug:
+    msg:
+      - "Server public key: {{ _wg_pubkey }}"
+      - "Peer private key for {{ peer.id }}: {{ _peer_privkey }}"
+      - "Peer public key for {{ peer.id }}: {{ _peer_pubkey }}"
+      - "Peer pre-shared key for {{ peer.id }}: {{ _peer_pskey }}"
+  when: wg_debug == true
+
+- name: "Create folder to save peer files ({{ peer.id }})"
+  ansible.builtin.file:
+    path: "/tmp/wg/peers/{{ peer.id }}/"
+    state: directory
+    mode: "0700"
+    owner: "root"
+    group: "root"
+    recurse: yes
+
+- name: "Create peer configuration ({{ peer.id }})"
+  ansible.builtin.template:
+    src: "templates/client.conf"
+    dest: "/tmp/wg/peers/{{ peer.id }}/peer-{{ peer.id }}.conf"
+    owner: "root"
+    group: "root"
+    mode: "0600"
+
+- name: "Saves the pre-shared key to file ({{ peer.id }})"
+  ansible.builtin.template:
+    src: "templates/peer_psk.j2"
+    dest: "/tmp/wg/peers/{{ peer.id }}/peer-{{ peer.id }}.psk"
+    owner: "root"
+    group: "root"
+    mode: "0600"
+
+- name: "Importing peer settings into Wireguard ({{ peer.id }})"
+  ansible.builtin.command:
+    argv:
+      - "wg"
+      - "set"
+      - "wg0"
+      - "peer"
+      - "{{ _peer_pubkey }}"
+      - "allowed-ips"
+      - "{{ _peer_ips }}"
+      - "preshared-key"
+      - "/tmp/wg/peers/{{ peer.id }}/peer-{{ peer.id }}.psk"
+  notify:
+      - "wg-quick-save-config"
+      - "wg-fetch-server-config"
+
+- name: "Copy configuration from host to ansible host ({{ peer.id }})"
+  ansible.builtin.fetch:
+    src: "/tmp/wg/peers/{{ peer.id }}/peer-{{ peer.id }}.conf"
+    dest: "{{ wg_copy_path }}/peers/{{ peer.id }}/{{ wg_server_iface | default(wg_default_server_iface) }}.conf"
+    flat: yes
+  changed_when: true
+  when: wg_copy_configs == true

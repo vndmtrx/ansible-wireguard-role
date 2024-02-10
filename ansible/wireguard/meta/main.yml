@@ -1,0 +1,15 @@
+---
+galaxy_info:
+  author: "Eduardo Rolim"
+  description: "Ansible Wireguard Role: An Unclouded Ansible Role for Secure Connections with Wireguard"
+
+  license: license (MIT)
+  min_ansible_version: 2.14.3
+
+  galaxy_tags: [Wireguard, VPN, Server, Peer]
+
+  platforms:
+    - name: Debian
+      versions:
+        - bookworm
+        - bullseye

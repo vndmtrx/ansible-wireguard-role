@@ -1,0 +1,95 @@
+---
+- block:
+    - name: "Check wg_server_privkey variable"
+      ansible.builtin.assert:
+        that:
+          - wg_server_privkey is defined
+          - wg_server_privkey
+        fail_msg: "Private key wg_privkey not set. Generating key."
+        quiet: true
+
+    - name: "Set _wg_privkey variable"
+      ansible.builtin.set_fact:
+        _wg_privkey: "{{ wg_server_privkey }}"
+      when: wg_server_privkey is defined
+  rescue:
+    - name: "Generate new private key"
+      ansible.builtin.command:
+        cmd: wg genkey
+      register: _genkey
+    
+    - name: "Set _wg_privkey variable"
+      ansible.builtin.set_fact:
+        _wg_privkey: "{{ _genkey.stdout }}"
+
+- name: "Generate the public key for the server private key"
+  ansible.builtin.command: wg pubkey
+  args:
+    stdin: "{{ _wg_privkey }}"
+  register: _pubkey
+
+- name: "Set _wg_pubkey variable"
+  ansible.builtin.set_fact:
+    _wg_pubkey: "{{ _pubkey.stdout }}"
+
+- name: "Debug"
+  ansible.builtin.debug:
+    msg:
+    - "Server private key: {{ _wg_privkey }}"
+    - "Server public key: {{ _wg_pubkey }}"
+  when: wg_debug == true
+
+- name: "Create folder on the host to save Wireguard files"
+  ansible.builtin.file:
+    path: "/tmp/wg/server/"
+    state: directory
+    mode: "0700"
+    owner: "root"
+    group: "root"
+    recurse: yes
+
+- name: "Debug"
+  ansible.builtin.debug:
+    msg:
+      - "IP (IPv4) for config: {{ wg_server_net_ipv4 | default(wg_default_server_net_ipv4) | ipaddr('net') | ipaddr('1') }}"
+      - "IP (IPv6) for config: {{ wg_server_net_ipv6 | default(wg_default_server_net_ipv6) | ipaddr('net') | ipaddr('1') }}"
+      - "Gateway: {{ wg_default_server_endpoint }}"
+  when: wg_debug == true
+
+- name: "Set server IP configuration variable"
+  ansible.builtin.set_fact:
+    _server_ips: "{{ wg_server_net_ipv4 | default(wg_default_server_net_ipv4) | ipaddr('net') | ipaddr(1) }},{{ wg_server_net_ipv6 | default(wg_default_server_net_ipv6) | ipaddr('net') | ipaddr(1) }}"
+
+
+- name: "Create Wireguard configuration file in temporary folder"
+  ansible.builtin.template:
+    src: "templates/server.conf"
+    dest: "/tmp/wg/server/{{ wg_server_iface | default(wg_default_server_iface) }}.conf"
+    mode: "0600"
+    owner: "root"
+    group: "root"
+
+- name: "Stop Wireguard service before changing configuration file"
+  ansible.builtin.systemd:
+    name: "wg-quick@{{ wg_server_iface | default(wg_default_server_iface) }}.service"
+    state: stopped
+
+- name: "Copy Wireguard configuration file to /etc/wireguard"
+  ansible.builtin.copy:
+    src: "/tmp/wg/server/{{ wg_server_iface | default(wg_default_server_iface) }}.conf"
+    dest: "/etc/wireguard/{{ wg_server_iface | default(wg_default_server_iface) }}.conf"
+    mode: "0600"
+    owner: "root"
+    group: "root"
+    remote_src: true
+  notify:
+    - wg-fetch-server-config
+
+- name: "Activating the Wireguard service"
+  ansible.builtin.systemd:
+    name: "wg-quick@{{ wg_server_iface | default(wg_default_server_iface) }}.service"
+    state: started
+    enabled: true
+
+- name: "Flush handlers"
+  ansible.builtin.meta: flush_handlers

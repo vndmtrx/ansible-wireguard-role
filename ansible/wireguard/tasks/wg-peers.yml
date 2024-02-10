@@ -1,0 +1,25 @@
+---
+- block:
+    - name: "Check wg_server_privkey variable"
+      ansible.builtin.assert:
+        that:
+          - wg_peers is defined
+          - wg_peers | type_debug == "list"
+        fail_msg: "Variável wg_peers não definida. Abortando."
+        quiet: true
+
+    - name: "Import peer configuration generation tasks for each variable item"
+      ansible.builtin.include_tasks: wg-peer-config.yml
+      vars:
+        index: "{{ _idx }}"
+        peer: "{{ _peer }}"
+      loop: "{{ wg_peers | flatten(levels=1) }}"
+      loop_control:
+        label: "{{ _peer.id }}"
+        index_var: _idx
+        loop_var: _peer
+  rescue:
+    - ansible.builtin.meta: noop
+
+- name: "Flush handlers"
+  ansible.builtin.meta: flush_handlers

@@ -1,0 +1,8 @@
+---
+# Preflight runs before installing Wireguard
+
+- name: "Delete temp files"
+  ansible.builtin.file:
+    state: absent
+    path: "/tmp/wg/"
+  when: wg_clean_install == true

@@ -1,0 +1,16 @@
+---
+
+# wg-install.yml
+wg_debug: false
+wg_backports: false
+wg_copy_configs: false
+wg_copy_path: "{{ playbook_dir }}/.configs/wg/"
+wg_clean_install: false
+
+# wg-server-config.yml
+wg_default_server_net_ipv4: "10.10.0.0/24"
+wg_default_server_net_ipv6: "fc00:dead:2bad:cafe::/64"
+wg_default_server_port: "51820"
+wg_default_server_iface: "wg0"
+wg_default_server_keepalive: "15"
+wg_default_server_endpoint: "{{ _ | default(ansible_default_ipv4.address) | default(ansible_default_ipv6.address) }}"

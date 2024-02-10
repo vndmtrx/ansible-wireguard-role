@@ -1,0 +1,15 @@
+---
+- name: "Saves Wireguard settings after changes"
+  ansible.builtin.command:
+    cmd: "wg-quick save {{ wg_server_iface | default(wg_default_server_iface) }}"
+  changed_when: true
+  listen: "wg-quick-save-config"
+
+- name: "Copy wireguard server configuration to ansible host"
+  ansible.builtin.fetch:
+    src: "/etc/wireguard/{{ wg_server_iface | default(wg_default_server_iface) }}.conf"
+    dest: "{{ wg_copy_path }}/server/{{ wg_server_iface | default(wg_default_server_iface) }}.conf"
+    flat: yes
+  changed_when: true
+  listen: "wg-fetch-server-config"
+  when: wg_copy_configs == true

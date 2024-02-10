@@ -1,0 +1,24 @@
+---
+- name: Checks before installing Wireguard
+  ansible.builtin.import_tasks: 'wg-preflight.yml'
+  tags:
+    - wg.preflight
+
+- name: Wireguard Installation
+  ansible.builtin.import_tasks: 'wg-install.yml'
+  tags:
+    - wg.server
+    - wg.install
+
+- name: Generating Wireguard Server Settings
+  ansible.builtin.import_tasks: 'wg-server-config.yml'
+  tags:
+    - wg.server
+    - wg.server-config
+
+- name: GGeneration Wireguard peer configurations
+  ansible.builtin.import_tasks: 'wg-peers.yml'
+  tags:
+    - wg.server
+    - wg.server-config
+    - wg.peers-config

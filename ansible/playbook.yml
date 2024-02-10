@@ -1,0 +1,27 @@
+---
+- name: Wireguard Role usage example
+  hosts: all
+  become: true
+  gather_facts: true
+
+  roles:
+    - role: wireguard
+      vars:
+        wg_server_net_ipv4: "172.16.0.0/24"
+        wg_server_net_ipv6: "fc00::/64"
+        wg_server_port: "51820"
+        wg_server_iface: "wg0"
+        wg_server_keepalive: "15"
+        wg_server_endpoint: wireguard.local
+        wg_server_privkey: "0000000000000000000000000000000000000000000="
+        wg_backports: true
+        wg_copy_configs: true
+        wg_clean_install: true
+        wg_debug: true
+        wg_peers:
+          - id: dudu
+            privkey: "aJdHtnh/hHonmxPVfY/qqh4fzdc8K9vfNxWqaldIAE8="
+            pskey: "Ib82ISGH2+MAFjbDqI0ZnNQADD4p+uaoCnRsyOksPlE="
+          - id: jose
+            pskey: "lELL/FnGJ9euG2nLds3h0GEra27kFmKNQNf46KhARG4="
+          - id: joaquim

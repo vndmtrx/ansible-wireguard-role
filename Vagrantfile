@@ -8,11 +8,7 @@ Vagrant.configure("2") do |vps|
   vps.vm.network "public_network",
     :use_dhcp_assigned_default_route => true,
     :adapter => 2,
-    :mac => "080027123456",
-    :bridge => [
-      "enxf8e43b4ad63d", 
-      "wlp0s20f3"
-    ]
+    :mac => "080027123456"
   vps.vm.provider "virtualbox" do |v|
     v.memory = 2048
     v.cpus = 2

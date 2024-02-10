@@ -61,7 +61,7 @@ To integrate the Ansible WireGuard Role into your playbook, follow these steps:
 
     ```yaml
     - hosts: your_target_hosts
-    roles:
+      roles:
         - role: wireguard
     ```
 

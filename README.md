@@ -101,46 +101,67 @@ To integrate the Ansible WireGuard Role into your playbook, follow these steps:
     
     This variable specifies the IPv4 network for the WireGuard server. In this example, it's set to "172.16.0.0/24", meaning the WireGuard server will operate within the IPv4 subnet 172.16.0.0 with a subnet mask of 255.255.255.0.
 
+    *If the variable is not set, the default value (`10.10.0.0/24`) is used.*
+
 - **wg_server_net_ipv6**:
     
     This variable specifies the IPv6 network for the WireGuard server. Here, it's set to "fc00::/64", indicating that the WireGuard server operates within the IPv6 subnet fc00::/64.
+
+    *If the variable is not set, the default value (`fc00:dead:2bad:cafe::/64`) is used.*
 
 - **wg_server_port**:
     
     This variable defines the port on which the WireGuard server listens for incoming connections. In this case, it's set to "51820", which is the default port used by WireGuard.
 
+    *If the variable is not set, the default value (`51820`) is used.*
+
 - **wg_server_iface**:
     
     This variable specifies the name of the WireGuard interface on the server. Here, it's set to "wg0".
+
+    *If the variable is not set, the default value (`wg0`) is used.*
 
 - **wg_server_keepalive**:
     
     This variable defines the frequency at which keep-alive messages are sent between peers to maintain the connection. It's set to "15" seconds, indicating that keep-alive messages are sent every 15 seconds.
 
+    *If the variable is not set, the default value (`15`) is used.*
+
 - **wg_server_endpoint**:
     
     This variable specifies the endpoint address of the WireGuard server. It's set to "wireguard.local" in this example, but typically it should be set to the public IP address or domain name of the server.
-    If the variable is not set, the Role will use the IP from the default route on the system.
+    
+    *If the variable is not set, the Role will use the IP from the default route on the system.*
 
 - **wg_server_privkey**:
     
     This variable holds the private key of the WireGuard server. It's a long string of characters representing the private key used for encryption and authentication.
 
+    *If the variable is not set, a new private key for the server will be created.*
+
 - **wg_backports**:
 
     This variable indicate whether backported packages for WireGuard are being utilized. Backports are newer versions of software packages that have been modified to run on older versions of an operating system.
+
+    *If the variable is not set, the default value (`false`) is used.*
 
 - **wg_copy_configs**:
     
     This variable controls whether the WireGuard configurations are copied to the local machine. If set to true, the configurations will be copied. This can be useful for distributing client configurations to end-users.
 
+    *If the variable is not set, the default value (`false`) is used.*
+
 - **wg_clean_install**:
     
-    Indicates a clean installation of WireGuard is requested. Set to true.
+    Indicates a clean installation of WireGuard is requested.
+
+    *If the variable is not set, the default value (`false`) is used.*
 
 - **wg_debug**:
     
     Controls debugging behavior during the WireGuard setup process. Set to true for verbose debugging output.
+
+    *If the variable is not set, the default value (`false`) is used.*
 
 - **wg_peers**:
 
@@ -159,6 +180,8 @@ To integrate the Ansible WireGuard Role into your playbook, follow these steps:
         Peer `jose` only has a pre-shared key specified.
         
         Peer `joaquim` does not have keys specified, suggesting that these keys will be generated dynamically or provided separately.
+    
+    *If the variable array is not set, no peer config will be created.*
 
 ## Supported Operating Systems
 
